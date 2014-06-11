@@ -1,0 +1,4 @@
+<% if File.exist? Rails.root.join('app/assets/javascripts/components/NewComponent.js.jsx') %>
+
+  <%= react_component 'NewComponent', {}, :prerender => true %>
+<% end %>

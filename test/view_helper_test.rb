@@ -1,7 +1,7 @@
 require 'test_helper'
-
 require 'capybara/rails'
 require 'capybara/poltergeist'
+
 
 Capybara.javascript_driver = :poltergeist
 Capybara.app = Rails.application
@@ -14,10 +14,13 @@ Capybara.register_driver :poltergeist_debug do |app|
 end
 Capybara.javascript_driver = :poltergeist_debug
 
+
 class ViewHelperTest < ActionDispatch::IntegrationTest
+  NEW_COMPONENT_FILE_PATH = File.expand_path('../dummy/app/assets/javascripts/components/NewComponent.js.jsx',  __FILE__).freeze
   include Capybara::DSL
 
   setup do
+    FileUtils.rm NEW_COMPONENT_FILE_PATH if File.exist? NEW_COMPONENT_FILE_PATH
     @helper = ActionView::Base.new.extend(React::Rails::ViewHelper)
     Capybara.current_driver = Capybara.javascript_driver
   end
@@ -79,4 +82,48 @@ class ViewHelperTest < ActionDispatch::IntegrationTest
     assert_match /data-react-checksum/, page.html
     assert_match /yep/, page.find("#status").text
   end
+
+# this test doesnt work...
+
+#   test 'react server rendering reflects component changes' do
+#     begin
+#       FileUtils.rm NEW_COMPONENT_FILE_PATH if File.exist? NEW_COMPONENT_FILE_PATH
+#
+#       visit '/serverside'
+#
+#       refute_match /New Server Rendered Component/, page.html
+#
+#       new_component = <<-NEW_COMPONENT
+# /** @jsx React.DOM */
+#
+# NewComponent = React.createClass({
+#   render: function() {
+#     return (
+#       <div>New Server Rendered Component</div>
+#     )
+#   }
+# })
+# NEW_COMPONENT
+#
+#       File.write(NEW_COMPONENT_FILE_PATH, new_component)
+#
+#       visit '/serverside'
+# binding.pry
+#       assert_match /New Server Rendered Component/, page.html
+#       changed_component = new_component.gsub('New Server Rendered Component', 'Changed Server Rendered Component')
+#       File.write(NEW_COMPONENT_FILE_PATH, changed_component)
+#
+#       visit '/serverside'
+#
+#       assert_match /Changed Server Rendered Component/, page.html
+#
+#       FileUtils.rm NEW_COMPONENT_FILE_PATH
+#
+#       visit '/serverside'
+#
+#       refute_match /Server Rendered Component/, page.html
+#     ensure
+#       FileUtils.rm NEW_COMPONENT_FILE_PATH
+#     end
+#   end
 end
