@@ -3,6 +3,29 @@ require 'digest'
 
 module React
   class Renderer
+    class Logger
+      def trace(*args)
+        ::Rails.logger.trace("React::Rails: console.trace(#{args.join(', ')})")
+      end
+      def debug(*args)
+        ::Rails.logger.debug("React::Rails: console.debug(#{args.join(', ')})")
+      end
+      def info(*args)
+        ::Rails.logger.info("React::Rails: console.info(#{args.join(', ')})")
+      end
+      def warn(*args)
+        ::Rails.logger.warn("React::Rails: console.warn(#{args.join(', ')})")
+      end
+      def error(*args)
+        ::Rails.logger.error("React::Rails: console.error(#{args.join(', ')})")
+      end
+      def fatal(*args)
+        ::Rails.logger.fatal("React::Rails: console.fatal(#{args.join(', ')})")
+      end
+      def log(*args)
+        ::Rails.logger.info("React::Rails: console.log(#{args.join(', ')})")
+      end
+    end
 
     cattr_accessor :pool
 
@@ -23,11 +46,21 @@ module React
 
     def context
       combined_js = self.class.combined_js
+
       combined_js_digest = Digest::SHA1.new.tap{|d| d << combined_js }
 
       return @context if @previous_combined_js_digest == combined_js_digest
       @previous_combined_js_digest = combined_js_digest
       @context = ExecJS.compile(combined_js)
+
+      v8 = @context.instance_variable_get(:@v8_context)
+
+      if !v8.nil? && defined? Rails
+        global = v8.eval('global')
+        global['console'] = Logger.new
+      end
+
+      @context
     end
 
     def render(component, args={})
